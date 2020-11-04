@@ -86,9 +86,11 @@ class Manager implements StoresSubscriptions
         $subscriberIds = array_map([$this, 'channelKey'], $subscriberIds);
         $subscribers = $this->connection->command('mget', [$subscriberIds]);
 
-        return collect(
-            array_map([$this, 'unserialize'], $subscribers)
-        )->filter();
+        return $subscribers === false
+            ? new Collection
+            : collect(
+                array_map([$this, 'unserialize'], $subscribers)
+            )->filter();
     }
 
     /**
