@@ -8,10 +8,12 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Redis\Factory;
 use Nuwave\Lighthouse\Subscriptions\Contracts\StoresSubscriptions;
 use Nuwave\Lighthouse\Subscriptions\Subscriber;
+use thekonz\LighthouseRedisBroadcaster\Events\ClientConnected;
+use thekonz\LighthouseRedisBroadcaster\Events\ClientDisconnected;
 
 class LighthouseSubscribeCommand extends Command
 {
-    protected $signature = 'lighthouse:subscribe {--debug}';
+    protected $signature = 'lighthouse:subscribe {--debug} {--events}';
 
     protected $description = 'Subscribe to graphql related redis events';
 
@@ -69,6 +71,12 @@ class LighthouseSubscribeCommand extends Command
             return $this->deleteSubscriber($channel);
         }
 
+        $subscriber = $this->storage->subscriberByChannel($channel);
+
+        if ($subscriber) {
+          event(new ClientConnected($subscriber));
+        }
+
         $this->knownChannels[$channel] = $memberCount;
     }
 
@@ -97,6 +105,7 @@ class LighthouseSubscribeCommand extends Command
         $subscriber = $this->storage->deleteSubscriber($channel);
         unset($this->knownChannels[$channel]);
         $this->logDeletedSubscriber($subscriber);
+        event(new ClientDisconnected($subscriber));
     }
 
     /**
