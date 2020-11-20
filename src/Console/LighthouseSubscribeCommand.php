@@ -13,7 +13,7 @@ use thekonz\LighthouseRedisBroadcaster\Events\ClientDisconnected;
 
 class LighthouseSubscribeCommand extends Command
 {
-    protected $signature = 'lighthouse:subscribe {--debug} {--events}';
+    protected $signature = 'lighthouse:subscribe {--debug} {--no-events}';
 
     protected $description = 'Subscribe to graphql related redis events';
 
@@ -71,10 +71,12 @@ class LighthouseSubscribeCommand extends Command
             return $this->deleteSubscriber($channel);
         }
 
-        $subscriber = $this->storage->subscriberByChannel($channel);
+        if (!$this->option('no-events')) {
+            $subscriber = $this->storage->subscriberByChannel($channel);
 
-        if ($subscriber) {
-          event(new ClientConnected($subscriber));
+            if ($subscriber) {
+                ClientConnected::dispatch($subscriber);
+            }
         }
 
         $this->knownChannels[$channel] = $memberCount;
@@ -105,7 +107,9 @@ class LighthouseSubscribeCommand extends Command
         $subscriber = $this->storage->deleteSubscriber($channel);
         unset($this->knownChannels[$channel]);
         $this->logDeletedSubscriber($subscriber);
-        event(new ClientDisconnected($subscriber));
+        if (!$this->option('no-events')) {
+            ClientDisconnected::dispatch($subscriber);
+        }
     }
 
     /**
