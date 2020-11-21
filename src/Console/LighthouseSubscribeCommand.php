@@ -64,14 +64,16 @@ class LighthouseSubscribeCommand extends Command
 
         $this->logEvent($memberCount, $channel);
 
+        $storeCount = $this->knownChannels[$channel] ?? 0;
+
         // The laravel echo server sends one event before joining and one after.
         // So the first event has member count 0, but we do not know the channel.
-        if ($memberCount === 0 && isset($this->knownChannels[$channel])) {
+        if ($memberCount === 0 && $storeCount !== 0) {
             // Someone left a channel that we know from before and it is now empty.
             return $this->deleteSubscriber($channel);
         }
 
-        if (!$this->option('no-events')) {
+        if (!$this->option('no-events') && $memberCount > $storeCount) {
             $subscriber = $this->storage->subscriberByChannel($channel);
 
             if ($subscriber) {
